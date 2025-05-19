@@ -11,10 +11,12 @@ from chonkie.embeddings import (
     CohereEmbeddings,
     Model2VecEmbeddings,
     OpenAIEmbeddings,
-JinaEmbeddings,
+    NewtouchEmbeddings,
 )
 from chonkie.types.base import Chunk
 from chonkie.types.semantic import SemanticChunk
+
+os.environ["NEWTOUCH_API_KEY"] = "ddf94bb11fef4edc88d5ae6c7d5a4471"
 
 
 @pytest.fixture
@@ -38,7 +40,7 @@ def embedding_model() -> BaseEmbeddings:
 
     """
     # return Model2VecEmbeddings("minishlab/potion-base-8M")
-    return JinaEmbeddings(model="jina-ai/jina-embeddings-v3", task="text-matching")
+    return NewtouchEmbeddings(model="newtouch_embedding")
 
 
 @pytest.fixture
@@ -116,7 +118,9 @@ def test_semantic_chunker_initialization(embedding_model: BaseEmbeddings) -> Non
     "OPENAI_API_KEY" not in os.environ,
     reason="Skipping test because OPENAI_API_KEY is not defined",
 )
-def test_semantic_chunker_initialization_openai(openai_embedding_model: BaseEmbeddings) -> None:
+def test_semantic_chunker_initialization_openai(
+    openai_embedding_model: BaseEmbeddings,
+) -> None:
     """Test that the SemanticChunker can be initialized with required parameters."""
     chunker = SemanticChunker(
         embedding_model=openai_embedding_model,
@@ -133,10 +137,13 @@ def test_semantic_chunker_initialization_openai(openai_embedding_model: BaseEmbe
     assert chunker.min_chunk_size == 2
 
 
-def test_semantic_chunker_initialization_sentence_transformer(embedding_model: BaseEmbeddings) -> None:
+def test_semantic_chunker_initialization_sentence_transformer(
+    embedding_model: BaseEmbeddings,
+) -> None:
     """Test that the SemanticChunker can be initialized with SentenceTransformer model."""
     chunker = SemanticChunker(
-        embedding_model="all-MiniLM-L6-v2",
+        # embedding_model="all-MiniLM-L6-v2",
+        embedding_model=embedding_model,
         chunk_size=512,
         threshold=0.5,
     )
@@ -154,7 +161,9 @@ def test_semantic_chunker_initialization_sentence_transformer(embedding_model: B
     "COHERE_API_KEY" not in os.environ,
     reason="Skipping test because COHERE_API_KEY is not defined",
 )
-def test_semantic_chunker_initialization_cohere(cohere_embedding_model: BaseEmbeddings) -> None:
+def test_semantic_chunker_initialization_cohere(
+    cohere_embedding_model: BaseEmbeddings,
+) -> None:
     """Test that the SemanticChunker can be initialized with required parameters."""
     chunker = SemanticChunker(
         embedding_model=cohere_embedding_model,
@@ -171,10 +180,13 @@ def test_semantic_chunker_initialization_cohere(cohere_embedding_model: BaseEmbe
     assert chunker.min_chunk_size == 2
 
 
-def test_semantic_chunker_chunking(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_semantic_chunker_chunking(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that the SemanticChunker can chunk a sample text."""
     chunker = SemanticChunker(
-        embedding_model="all-MiniLM-L6-v2",
+        # embedding_model="all-MiniLM-L6-v2",
+        embedding_model=embedding_model,
         chunk_size=512,
         threshold=0.5,
     )
@@ -254,7 +266,9 @@ def test_semantic_chunker_similarity_threshold(embedding_model: BaseEmbeddings) 
     assert len(chunks) > 1
 
 
-def test_semantic_chunker_percentile_mode(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_semantic_chunker_percentile_mode(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that the SemanticChunker works with percentile-based similarity."""
     chunker = SemanticChunker(
         embedding_model=embedding_model,
@@ -275,6 +289,7 @@ def verify_chunk_indices(chunks: List[Chunk], original_text: str) -> None:
         # Remove any leading/trailing whitespace from both texts for comparison
         chunk_text = chunk.text.strip()
         extracted_text = extracted_text.strip()
+        print(f"{i}----> {chunk_text}")
 
         assert chunk_text == extracted_text, (
             f"Chunk {i} text mismatch:\n"
@@ -284,7 +299,9 @@ def verify_chunk_indices(chunks: List[Chunk], original_text: str) -> None:
         )
 
 
-def test_sentence_chunker_indices(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_sentence_chunker_indices(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that the SentenceChunker correctly maps chunk indices to the original text."""
     chunker = SemanticChunker(
         embedding_model=embedding_model, chunk_size=512, threshold=0.5
@@ -293,36 +310,42 @@ def test_sentence_chunker_indices(embedding_model: BaseEmbeddings, sample_text: 
     verify_chunk_indices(chunks, sample_text)
 
 
-def test_sentence_chunker_indices_complex_md(embedding_model: BaseEmbeddings, sample_complex_markdown_text: str) -> None:
+def test_sentence_chunker_indices_complex_md(
+    embedding_model: BaseEmbeddings, sample_complex_markdown_text: str
+) -> None:
     """Test that the SentenceChunker correctly maps chunk indices to the original text."""
     chunker = SemanticChunker(
-        embedding_model=embedding_model, chunk_size=20, threshold=0.5
+        embedding_model=embedding_model, chunk_size=10, threshold=0.5
     )
     chunks = chunker.chunk(sample_complex_markdown_text)
     verify_chunk_indices(chunks, sample_complex_markdown_text)
 
 
-def test_semantic_chunker_token_counts(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_semantic_chunker_token_counts(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that the SemanticChunker correctly calculates token counts."""
     chunker = SemanticChunker(
         embedding_model=embedding_model, chunk_size=512, threshold=0.5
     )
     chunks = chunker.chunk(sample_text)
-    assert all([chunk.token_count > 0 for chunk in chunks]), (
-        "All chunks must have a positive token count"
-    )
-    assert all([chunk.token_count <= 512 for chunk in chunks]), (
-        "All chunks must have a token count less than or equal to 512"
-    )
+    assert all(
+        [chunk.token_count > 0 for chunk in chunks]
+    ), "All chunks must have a positive token count"
+    assert all(
+        [chunk.token_count <= 512 for chunk in chunks]
+    ), "All chunks must have a token count less than or equal to 512"
 
     token_counts = [chunker.tokenizer.count_tokens(chunk.text) for chunk in chunks]
     for i, (chunk, token_count) in enumerate(zip(chunks, token_counts)):
-        assert chunk.token_count == token_count, (
-            f"Chunk {i} has a token count of {chunk.token_count} but the encoded text length is {token_count}"
-        )
+        assert (
+            chunk.token_count == token_count
+        ), f"Chunk {i} has a token count of {chunk.token_count} but the encoded text length is {token_count}"
 
 
-def test_semantic_chunker_reconstruction(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_semantic_chunker_reconstruction(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that the SemanticChunker can reconstruct the original text."""
     chunker = SemanticChunker(
         embedding_model=embedding_model, chunk_size=512, threshold=0.5
@@ -331,7 +354,9 @@ def test_semantic_chunker_reconstruction(embedding_model: BaseEmbeddings, sample
     assert sample_text == "".join([chunk.text for chunk in chunks])
 
 
-def test_semantic_chunker_reconstruction_complex_md(embedding_model: BaseEmbeddings, sample_complex_markdown_text: str) -> None:
+def test_semantic_chunker_reconstruction_complex_md(
+    embedding_model: BaseEmbeddings, sample_complex_markdown_text: str
+) -> None:
     """Test that the SemanticChunker can reconstruct the original text."""
     chunker = SemanticChunker(
         embedding_model=embedding_model, chunk_size=512, threshold=0.5
@@ -340,7 +365,9 @@ def test_semantic_chunker_reconstruction_complex_md(embedding_model: BaseEmbeddi
     assert sample_complex_markdown_text == "".join([chunk.text for chunk in chunks])
 
 
-def test_semantic_chunker_reconstruction_batch(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_semantic_chunker_reconstruction_batch(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that the SemanticChunker can reconstruct the original text."""
     chunker = SemanticChunker(
         embedding_model=embedding_model, chunk_size=512, threshold=0.5
@@ -349,7 +376,9 @@ def test_semantic_chunker_reconstruction_batch(embedding_model: BaseEmbeddings, 
     assert sample_text == "".join([chunk.text for chunk in chunks])
 
 
-def test_semantic_chunker_return_type(embedding_model: BaseEmbeddings, sample_text: str) -> None:
+def test_semantic_chunker_return_type(
+    embedding_model: BaseEmbeddings, sample_text: str
+) -> None:
     """Test that SemanticChunker's return type is correctly set."""
     chunker = SemanticChunker(
         embedding_model=embedding_model,
@@ -371,7 +400,10 @@ def test_semantic_chunker_from_recipe_default() -> None:
     assert chunker.delim == [".", "!", "?", "\n"]
     assert chunker.include_delim == "prev"
 
-def test_semantic_chunker_from_recipe_custom_params(embedding_model: BaseEmbeddings) -> None:
+
+def test_semantic_chunker_from_recipe_custom_params(
+    embedding_model: BaseEmbeddings,
+) -> None:
     """Test that SemanticChunker.from_recipe works with custom parameters."""
     chunker = SemanticChunker.from_recipe(
         name="default",
@@ -389,13 +421,15 @@ def test_semantic_chunker_from_recipe_custom_params(embedding_model: BaseEmbeddi
     assert chunker.threshold == 0.9
     assert chunker.return_type == "texts"
 
+
 def test_semantic_chunker_from_recipe_nonexistent() -> None:
     """Test that SemanticChunker.from_recipe raises an error if the recipe does not exist."""
     with pytest.raises(ValueError):
         SemanticChunker.from_recipe(name="invalid")
-    
+
     with pytest.raises(ValueError):
         SemanticChunker.from_recipe(name="default", lang="invalid")
+
 
 if __name__ == "__main__":
     pytest.main()

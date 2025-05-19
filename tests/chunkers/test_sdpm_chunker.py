@@ -5,8 +5,15 @@ import os
 import pytest
 
 from chonkie import SDPMChunker
-from chonkie.embeddings import CohereEmbeddings, Model2VecEmbeddings, OpenAIEmbeddings
+from chonkie.embeddings import (
+    CohereEmbeddings,
+    Model2VecEmbeddings,
+    OpenAIEmbeddings,
+    NewtouchEmbeddings,
+)
 from chonkie.types import SemanticChunk
+
+os.environ["NEWTOUCH_API_KEY"] = "ddf94bb11fef4edc88d5ae6c7d5a4471"
 
 
 @pytest.fixture
@@ -29,7 +36,8 @@ def embedding_model():
         Model2VecEmbeddings: A Model2Vec model initialized with 'minishlab/potion-base-8M'
 
     """
-    return Model2VecEmbeddings("minishlab/potion-base-8M")
+    # return Model2VecEmbeddings("minishlab/potion-base-8M")
+    return NewtouchEmbeddings(model="newtouch_embedding")
 
 
 @pytest.fixture
