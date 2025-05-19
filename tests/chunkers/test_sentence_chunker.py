@@ -6,6 +6,7 @@ from typing import List
 
 import pytest
 from tokenizers import Tokenizer
+from transformers import AutoTokenizer
 
 from chonkie import Chunk, SentenceChunker
 
@@ -13,7 +14,8 @@ from chonkie import Chunk, SentenceChunker
 @pytest.fixture
 def tokenizer() -> Tokenizer:
     """Return a tokenizer instance."""
-    return Tokenizer.from_pretrained("gpt2")
+    # return Tokenizer.from_pretrained("gpt2")
+    return AutoTokenizer.from_pretrained("Qwen/Qwen3-4B", trust_remote_code=True)
 
 
 @pytest.fixture
@@ -190,7 +192,8 @@ def verify_chunk_indices(chunks: List[Chunk], original_text: str) -> None:
         # Remove any leading/trailing whitespace from both texts for comparison
         chunk_text = chunk.text.strip()
         extracted_text = extracted_text.strip()
-
+        print(f"Chunks text: {chunk_text}")
+        print(f"Chunks extracted text: {extracted_text}")
         assert chunk_text == extracted_text, (
             f"Chunk {i} text mismatch:\n"
             f"Chunk text: '{chunk_text}'\n"

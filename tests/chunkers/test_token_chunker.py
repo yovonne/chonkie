@@ -22,14 +22,14 @@ def tiktokenizer() -> Encoding:
 @pytest.fixture
 def transformers_tokenizer() -> PreTrainedTokenizerFast:
     """Fixture that returns a GPT-2 tokenizer from the transformers library."""
-    return cast(PreTrainedTokenizerFast, AutoTokenizer.from_pretrained("gpt2"))
-
+    # return cast(PreTrainedTokenizerFast, AutoTokenizer.from_pretrained("gpt2"))
+    return cast(PreTrainedTokenizerFast, AutoTokenizer.from_pretrained("Qwen/Qwen3-4B", trust_remote_code=True))
 
 @pytest.fixture
 def tokenizer() -> Tokenizer:
     """Fixture that returns a GPT-2 tokenizer from the tokenizers library."""
-    return Tokenizer.from_pretrained("gpt2")
-
+    # return Tokenizer.from_pretrained("gpt2")
+    return Tokenizer.from_pretrained("Qwen/Qwen3-4B", trust_remote_code=True)
 
 @pytest.fixture
 def sample_text() -> str:
@@ -86,13 +86,13 @@ def test_token_chunker_initialization_tok(tokenizer: Tokenizer) -> None:
 def test_token_chunker_initialization_hftok(transformers_tokenizer: PreTrainedTokenizerFast) -> None:
     """Test that the TokenChunker can be initialized with a tokenizer."""
     chunker = TokenChunker(
-        tokenizer=transformers_tokenizer, chunk_size=512, chunk_overlap=128
+        tokenizer=transformers_tokenizer, chunk_size=50, chunk_overlap=30
     )
 
     assert chunker is not None
     assert chunker.tokenizer.tokenizer == transformers_tokenizer
-    assert chunker.chunk_size == 512
-    assert chunker.chunk_overlap == 128
+    assert chunker.chunk_size == 50
+    assert chunker.chunk_overlap == 30
 
 
 def test_token_chunker_initialization_tik(tiktokenizer: Encoding) -> None:
@@ -122,13 +122,15 @@ def test_token_chunker_chunking(tiktokenizer: Encoding, sample_text: str) -> Non
 def test_token_chunker_chunking_hf(transformers_tokenizer: PreTrainedTokenizerFast, sample_text: str) -> None:
     """Test that the TokenChunker can chunk a sample text into tokens."""
     chunker = TokenChunker(
-        tokenizer=transformers_tokenizer, chunk_size=512, chunk_overlap=128
+        tokenizer=transformers_tokenizer, chunk_size=20, chunk_overlap=10
     )
     chunks = chunker.chunk(sample_text)
+    for chunk in chunks:
+        print(f"Chunk (start={chunk.start_index}, end={chunk.end_index}): {chunk.text}")
 
     assert len(chunks) > 0
     assert type(chunks[0]) is Chunk
-    assert all([chunk.token_count <= 512 for chunk in chunks])
+    assert all([chunk.token_count <= 50 for chunk in chunks])
     assert all([chunk.token_count > 0 for chunk in chunks])
     assert all([chunk.text is not None for chunk in chunks])
     assert all([chunk.start_index is not None for chunk in chunks])

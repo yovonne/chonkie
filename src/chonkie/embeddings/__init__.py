@@ -8,6 +8,7 @@ from .model2vec import Model2VecEmbeddings
 from .openai import OpenAIEmbeddings
 from .sentence_transformer import SentenceTransformerEmbeddings
 from .voyageai import VoyageAIEmbeddings
+from .newtouch import NewtouchEmbeddings
 
 # Add all embeddings classes to __all__
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "AutoEmbeddings",
     "JinaEmbeddings",
     "VoyageAIEmbeddings",
+    "NewtouchEmbeddings",
 ]

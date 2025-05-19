@@ -11,6 +11,7 @@ from chonkie.embeddings import (
     CohereEmbeddings,
     Model2VecEmbeddings,
     OpenAIEmbeddings,
+JinaEmbeddings,
 )
 from chonkie.types.base import Chunk
 from chonkie.types.semantic import SemanticChunk
@@ -36,7 +37,8 @@ def embedding_model() -> BaseEmbeddings:
         Model2VecEmbeddings: A Model2Vec model initialized with 'minishlab/potion-base-8M'
 
     """
-    return Model2VecEmbeddings("minishlab/potion-base-8M")
+    # return Model2VecEmbeddings("minishlab/potion-base-8M")
+    return JinaEmbeddings(model="jina-ai/jina-embeddings-v3", task="text-matching")
 
 
 @pytest.fixture
@@ -294,7 +296,7 @@ def test_sentence_chunker_indices(embedding_model: BaseEmbeddings, sample_text: 
 def test_sentence_chunker_indices_complex_md(embedding_model: BaseEmbeddings, sample_complex_markdown_text: str) -> None:
     """Test that the SentenceChunker correctly maps chunk indices to the original text."""
     chunker = SemanticChunker(
-        embedding_model=embedding_model, chunk_size=512, threshold=0.5
+        embedding_model=embedding_model, chunk_size=20, threshold=0.5
     )
     chunks = chunker.chunk(sample_complex_markdown_text)
     verify_chunk_indices(chunks, sample_complex_markdown_text)
